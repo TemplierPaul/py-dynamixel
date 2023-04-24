@@ -24,31 +24,27 @@ import numpy as np
 PROTOCOL_VERSION = 2.0
 
 # The following addresses assume XH motors.
-ADDR_TORQUE_ENABLE = 24 #64
-ADDR_GOAL_POSITION = 30 #116
-ADDR_PRESENT_POSITION = 37 #132
-ADDR_PRESENT_VELOCITY = 39 #128
-ADDR_PRESENT_CURRENT = 45 #126
+ADDR_TORQUE_ENABLE = 64
+ADDR_GOAL_POSITION = 116
+ADDR_PRESENT_POSITION = 132
+ADDR_PRESENT_VELOCITY = 128
+ADDR_PRESENT_CURRENT = 126
 ADDR_PRESENT_POS_VEL_CUR = 126
 
 # Data Byte Length
-LEN_PRESENT_POSITION = 2#4
-LEN_PRESENT_VELOCITY = 2#4
-LEN_PRESENT_CURRENT = 1#2
+LEN_PRESENT_POSITION = 4
+LEN_PRESENT_VELOCITY = 4
+LEN_PRESENT_CURRENT = 2
 LEN_PRESENT_POS_VEL_CUR = 10
-LEN_GOAL_POSITION = 2#4
+LEN_GOAL_POSITION = 4
+
 
 DEFAULT_POS_SCALE = 2.0 * np.pi / 4096  # 0.088 degrees
 # See http://emanual.robotis.com/docs/en/dxl/x/xh430-v210/#goal-velocity
 DEFAULT_VEL_SCALE = 0.229 * 2.0 * np.pi / 60.0  # 0.229 rpm
 DEFAULT_CUR_SCALE = 1.34
 
-ADDR_PRO_DELAY_TIME = 5
-DELAY = 0 
-ADDR_PRO_RETURN_LEVEL= 17
-RETURN_LEVEL = 1
 
-from dynamixel_sdk import COMM_SUCCESS
 def dynamixel_cleanup_handler():
     """Cleanup function to ensure Dynamixels are disconnected properly."""
     open_clients = list(DynamixelClient.OPEN_CLIENTS)
@@ -78,7 +74,6 @@ def unsigned_to_signed(value: int, size: int) -> int:
 
 class DynamixelClient:
     """Client for communicating with Dynamixel motors.
-
     NOTE: This only supports Protocol 2.
     """
 
@@ -88,13 +83,12 @@ class DynamixelClient:
     def __init__(self,
                  motor_ids: Sequence[int],
                  port: str = '/dev/ttyUSB0',
-                 baudrate: int = 1000000,
+                 baudrate: int = 2000000,
                  lazy_connect: bool = False,
                  pos_scale: Optional[float] = None,
                  vel_scale: Optional[float] = None,
                  cur_scale: Optional[float] = None):
         """Initializes a new client.
-
         Args:
             motor_ids: All motor IDs being used by the client.
             port: The Dynamixel device to talk to. e.g.
@@ -112,7 +106,6 @@ class DynamixelClient:
                 motor-dependent. If not provided uses the default scale.
         """
         import dynamixel_sdk
-        
         self.dxl = dynamixel_sdk
 
         self.motor_ids = list(motor_ids)
@@ -134,45 +127,12 @@ class DynamixelClient:
 
         self.OPEN_CLIENTS.add(self)
 
-    def check(self,):
-        
-        for id in self.motor_ids:
-            dxl_model_number, dxl_comm_result, dxl_error = self.packet_handler.ping(self.port_handler, id)
-    
-            if dxl_comm_result != COMM_SUCCESS:
-                print("%s" % self.packet_handler.getTxRxResult(dxl_comm_result))
-                print(dxl_comm_result)
-            elif dxl_error != 0:
-                print("%s" % self.packet_handler.getRxPacketError(dxl_error))
-            else:
-                print("[ID:%03d] ping Succeeded. Dynamixel model number : %d" % (id, dxl_model_number))
- 
-        return 1
-
-    def check_2(self,):
-        
-        for id in self.motor_ids:
-            
-            dxl_comm_result, dxl_error = self.packet_handler.write1ByteTxRx(self.port_handler, id, ADDR_PRO_DELAY_TIME, DELAY)
-            dxl_comm_result, dxl_error = self.packet_handler.write1ByteTxRx(self.port_handler, id, ADDR_PRO_RETURN_LEVEL, RETURN_LEVEL)
-            
-            if dxl_comm_result != COMM_SUCCESS:
-                print("%s" % self.packet_handler.getTxRxResult(dxl_comm_result))
-                print(dxl_comm_result)
-            elif dxl_error != 0:
-                print("%s" % self.packet_handler.getRxPacketError(dxl_error))
-            else:
-                print("Succeed updating", id)
- 
-        return 1
-    
     @property
     def is_connected(self) -> bool:
         return self.port_handler.is_open
 
     def connect(self):
         """Connects to the Dynamixel motors.
-
         NOTE: This should be called after all DynamixelClients on the same
             process are created.
         """
@@ -180,7 +140,6 @@ class DynamixelClient:
 
         if self.port_handler.openPort():
             logging.info('Succeeded to open port: %s', self.port_name)
-            print("succeeded to open port")
         else:
             raise OSError(
                 ('Failed to open port at {} (Check that the device is powered '
@@ -188,20 +147,14 @@ class DynamixelClient:
 
         if self.port_handler.setBaudRate(self.baudrate):
             logging.info('Succeeded to set baudrate to %d', self.baudrate)
-            self.port_handler.setPacketTimeoutMillis(1)
-            print("Connected")
         else:
             raise OSError(
                 ('Failed to set the baudrate to {} (Ensure that the device was '
                  'configured for this baudrate).').format(self.baudrate))
-        
-        self.check()
-        self.check_2()
-        
+
         # Start with all motors enabled.
         self.set_torque_enabled(self.motor_ids, True)
-        
-        
+
     def disconnect(self):
         """Disconnects from the Dynamixel device."""
         if not self.is_connected:
@@ -221,7 +174,6 @@ class DynamixelClient:
                            retries: int = -1,
                            retry_interval: float = 0.25):
         """Sets whether torque is enabled for the motors.
-
         Args:
             motor_ids: The motor IDs to configure.
             enabled: Whether to engage or disengage the motors.
@@ -252,7 +204,6 @@ class DynamixelClient:
     def write_desired_pos(self, motor_ids: Sequence[int],
                           positions: np.ndarray):
         """Writes the given desired positions.
-
         Args:
             motor_ids: The motor IDs to write to.
             positions: The joint angles in radians to write.
@@ -271,12 +222,10 @@ class DynamixelClient:
             address: int,
     ) -> Sequence[int]:
         """Writes a value to the motors.
-
         Args:
             motor_ids: The motor IDs to write to.
             value: The value to write to the control table.
             address: The control table address to write to.
-
         Returns:
             A list of IDs that were unsuccessful.
         """
@@ -295,7 +244,6 @@ class DynamixelClient:
                    values: Sequence[Union[int, float]], address: int,
                    size: int):
         """Writes values to a group of motors.
-
         Args:
             motor_ids: The motor IDs to write to.
             values: The values to write.
@@ -377,7 +325,6 @@ class DynamixelClient:
 
 class DynamixelReader:
     """Reads data from Dynamixel motors.
-
     This wraps a GroupBulkRead from the DynamixelSDK.
     """
 
@@ -507,18 +454,16 @@ if __name__ == '__main__':
     parser.add_argument(
         '-d',
         '--device',
-        default='/dev/tty.usbserial-FT4TFNGI',#'/dev/ttyUSB0',
+        default='/dev/ttyUSB0',
         help='The Dynamixel device to connect to.')
     parser.add_argument(
-        '-b', '--baud', default=3000000, help='The baudrate to connect with.')
+        '-b', '--baud', default=2000000, help='The baudrate to connect with.')
     parsed_args = parser.parse_args()
+
     motors = [int(motor) for motor in parsed_args.motors.split(',')]
 
-    way_points = [np.zeros(len(motors)), np.full(len(motors), np.pi/16)]
+    way_points = [np.zeros(len(motors)), np.full(len(motors), np.pi)]
 
-    print("Motors: ", motors)
-    print("Device: ", parsed_args.device)
-    print("Baudrate: ", parsed_args.baud)
     with DynamixelClient(motors, parsed_args.device,
                          parsed_args.baud) as dxl_client:
         for step in itertools.count():

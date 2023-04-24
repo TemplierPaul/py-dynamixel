@@ -148,6 +148,7 @@ def main():
     port = ports[0]
     print('Using the first on the list', port)
 
+
     ctrl_freq = 100
     Hexa = Quadruped(port, ctrl_freq)
 
