@@ -4,6 +4,9 @@ import numpy as np
 import time
 from dynamixel_client import DynamixelClient
 import py_dynamixel.io as io
+import numpy as np
+import time
+
 
 ports = io.get_available_ports()
 print('available ports:', ports)
@@ -13,7 +16,8 @@ port = ports[0]
 print('Using the first on the list', port)
 device_path = port
 
-baud_rate = 3000000
+
+baud_rate = 100000
 
 # motor ids
 motors = list()
@@ -43,7 +47,8 @@ print("Baudrate: ", baud_rate)
 ctrl_freq = 50. # Hz
 ctrl_dt = 1./ctrl_freq
 
-start = time.time()
+dxl_client = DynamixelClient(motors, device_path, baud_rate) 
+dxl_client.connect()
 
 #dxl_client = DynamixelClient(motors, device_path, baud_rate, lazy_connect=True) 
 with DynamixelClient(motors, device_path, baud_rate, lazy_connect=True) as dxl_client:
@@ -75,8 +80,8 @@ for step in itertools.count():
     write_start = time.time()
     if step > 0 and step % 50 == 0:
         way_point = way_points[(step // 100) % len(way_points)]
+        #print('Writing: {}'.format(way_point.tolist()))
 
-        print('Writing: {}'.format(way_point.tolist()))
         dxl_client.write_desired_pos(motors, way_point)
 
         #print('[{}] Write Frequency: {:.2f} Hz'.format(
@@ -88,11 +93,7 @@ for step in itertools.count():
     if step % 50 == 0:
         print('[{}] Read Frequency: {:.2f} Hz'.format(
             step, 1.0 / (time.time() - read_start)))
-        print('> Position: {}'.format(pos_now.tolist()))
-        print('> Velocity: {}'.format(vel_now.tolist()))
-        print('> Current: {}'.format(cur_now.tolist()))
-
-        if pos_now.tolist() == target:
-            way_points = [np.zeros(len(motors)), np.full(len(motors), -target)]
-
-    '''
+        print('> Pos: {}'.format(pos_now.tolist()))
+        #print('> Vel: {}'.format(vel_now.tolist()))
+        #print('> Cur: {}'.format(cur_now.tolist()))
+        
