@@ -66,15 +66,15 @@ class Quadruped():
         self._exec_traj()
         time.sleep(0.5)
         
-    def run_sin_controller(self, ctrl, duration):        
-        controller = SinusoidController(ctrl)
-        for t in np.arange(0,duration,1.0/self.ctrl_freq):
-            command = controller.commanded_jointpos(t)
-            command = command # offset differnce from simulator to real world configuration
-            self._traj.append(command)
+    # def run_sin_controller(self, ctrl, duration):        
+    #     controller = SinusoidController(ctrl)
+    #     for t in np.arange(0,duration,1.0/self.ctrl_freq):
+    #         command = controller.commanded_jointpos(t)
+    #         command = command # offset differnce from simulator to real world configuration
+    #         self._traj.append(command)
 
-        self._exec_traj()
-        time.sleep(0.5)
+    #     self._exec_traj()
+    #     time.sleep(0.5)
 
     def simple_sine_controller(self,amplitude, phase, t):
         return (np.pi / 3 *amplitude * np.sin((t*np.pi/25)+phase))# * 180 / np.pi
@@ -107,8 +107,14 @@ class Quadruped():
             command = actions
             self._traj.append(command)
 
-        self._exec_traj()
-        time.sleep(0.5)
+        # self._exec_traj()
+        # time.sleep(0.5)
+
+    def _exec_step(self):
+        if len(self._traj) > 0:
+            joint_pos = self._traj[0]
+            self.dxl_io.set_goal_position(self.ids, joint_pos)
+            self._traj.pop(0)
 
         
     def _exec_traj(self):
