@@ -26,6 +26,12 @@ class MultiQuad:
         for QT in self.QTs:
             QT.run_new_sin_controller(ctrl, duration)
 
+    def multi_traj(self, trajs, duration=4.0):
+        for i in range(len(trajs)):
+            t = trajs[i]
+            QT = self.QTs[i]
+            QT.run_new_sin_controller(t, duration)
+
     def shutdown(self):
         for QT in self.QTs:
             QT.shutdown()
